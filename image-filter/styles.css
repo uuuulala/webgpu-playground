@@ -1,0 +1,46 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.log-wrapper {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translate(-50%, 0);
+  font-family: monospace;
+}
+
+.log-wrapper > div {
+  padding: 12px;
+}
+.log-wrapper > .log {
+  color: #ffffff;
+  background-color: rgba(5, 0, 15, 0.75);
+}
+
+.lil-gui {
+  --width: 350px;
+  --widget-height: 20px;
+  font-size: 15px;
+  --input-font-size: 15px;
+  --padding: 10px;
+  --spacing: 10px;
+  --slider-knob-width: 5px;
+  --background-color: rgba(5, 0, 15, 0.8);
+  --widget-color: rgba(255, 255, 255, 0.3);
+  --focus-color: rgba(255, 255, 255, 0.4);
+  --hover-color: rgba(255, 255, 255, 0.5);
+
+  --font-family: monospace;
+}
