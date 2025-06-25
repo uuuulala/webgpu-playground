@@ -35,21 +35,16 @@
       const { pipeline, sampler } = buildPipeline();
       let bindGroup;
       const uniformBuffer = device.createBuffer({
-        size: 6 * 8, // 5 floats in the uniforms (2 x canvas size + 3 params)
+        size: 4 * 8,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
-      resizeCanvas();
       updateUniforms();
       createGUI();
 
       await updateTexture();
       frame();
 
-      window.onresize = function () {
-        resizeCanvas();
-        updateUniforms();
-      };
       canvas.onclick = function () {
         settings.imageURL = getRandomImageUrl();
         updateTexture();
@@ -90,6 +85,8 @@
         const texture = await createTextureFromImage(device, settings.imageURL);
         logMessage(`Image loaded: ${texture.width} × ${texture.height}`);
         canvas.style.opacity = '1';
+
+        resizeCanvas(texture.width, texture.height);
 
         bindGroup = device.createBindGroup({
           layout: pipeline.getBindGroupLayout(0),
@@ -148,9 +145,9 @@
         return { pipeline, sampler, bindGroupLayout };
       }
 
-      function resizeCanvas() {
-        canvas.width = canvas.clientWidth * window.devicePixelRatio;
-        canvas.height = canvas.clientHeight * window.devicePixelRatio;
+      function resizeCanvas(w, h) {
+        canvas.width = w;
+        canvas.height = h;
         context.configure({
           device,
           format,
@@ -159,12 +156,11 @@
       }
 
       function updateUniforms() {
-        const canvasSize = [canvas.width, canvas.height];
         const { brightness, contrast, exposure, gammaCompInShader } = settings;
         device.queue.writeBuffer(
           uniformBuffer,
           0,
-          new Float32Array([...canvasSize, brightness, contrast, exposure, gammaCompInShader ? 1 : 0])
+          new Float32Array([brightness, contrast, exposure, gammaCompInShader ? 1 : 0])
         );
       }
 

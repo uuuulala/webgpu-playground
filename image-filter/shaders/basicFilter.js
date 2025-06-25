@@ -1,7 +1,6 @@
 // language=WGSL
 export const basicFilterShader = `
   struct Uniforms {
-    canvasSize: vec2<f32>,
     brightness: f32,
     contrast: f32,
     exposure: f32,
@@ -19,28 +18,7 @@ export const basicFilterShader = `
 
   @vertex
   fn vs(@builtin(vertex_index) i: u32) -> VertexOutput {
-
-    var output : VertexOutput;
-
-    let texSize = vec2<f32>(textureDimensions(tex));
-    let canvasSize = uniforms.canvasSize;
-    
-    let texAspect = texSize.x / texSize.y;
-    let canvasAspect = canvasSize.x / canvasSize.y;
-
-    var fitScale = vec2<f32>(1.);
-    if (texAspect > canvasAspect) {
-      fitScale.y = canvasAspect / texAspect;
-    } else {
-      fitScale.x = texAspect / canvasAspect;
-    }
-    let texFits = all(texSize <= canvasSize);
-    var scale = vec2<f32>(1.);
-    if (texFits) {
-      scale = texSize / canvasSize;
-    } else {
-      scale = fitScale;
-    }
+    var output: VertexOutput;
 
     let quadPos = array<vec2<f32>, 4>(
       vec2(-1., -1.),
@@ -49,7 +27,7 @@ export const basicFilterShader = `
       vec2( 1.,  1.)
     );
 
-    let ndc = quadPos[i] * scale;
+    let ndc = quadPos[i];
 
     output.Position = vec4<f32>(ndc, 0., 1.);
     output.ndc = quadPos[i];
