@@ -9,5 +9,5 @@ export async function loadImageBitmap(source) {
 export const getRandomImageUrl = () => {
   const w = Math.floor(Math.random() * 10) * 100 + 500;
   const h = Math.floor(Math.random() * 10) * 100 + 500;
-  return `https://picsum.photos/${w}/${h}?${Date.now()}`;
+  return `https://placedog.net/${w}/${h}?random`;
 };
