@@ -10,14 +10,14 @@
     <canvas id="gpu-canvas"></canvas>
     <div class="log-wrapper">
       <div class="log"></div>
-      <div>click to load random pic</div>
+      <div>click on pic to load another random</div>
     </div>
     <input type="file" accept="image/*" style="display: none" />
 
     <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.19"></script>
     <script type="module">
       import { basicFilterShader } from './shaders/basicFilter.js';
-      import { loadImageBitmap, getRandomImageUrl } from './imageLoader.js';
+      import { loadImageBitmap, getRandomImageUrl, downloadImageBitmap } from './imageLoader.js';
       import { logMessage } from './logElement.js';
 
       const settings = {
@@ -29,13 +29,13 @@
         imageURL: getRandomImageUrl(),
       };
 
-      let currentBitmap, useCurrentBitmap;
+      let loadedBitmap;
 
       const { device, context, format, canvas } = await initWebGPU();
       const { pipeline, sampler } = buildPipeline();
       let bindGroup;
       const uniformBuffer = device.createBuffer({
-        size: 4 * 8,
+        size: 4 * 4,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
@@ -61,14 +61,13 @@
         return { device, context, format, canvas };
       }
 
-      async function createTextureFromImage(device, url) {
+      async function createTextureFromImage(device, url, loadNewBitmap) {
         let img;
-        if (useCurrentBitmap) {
-          img = currentBitmap;
-          useCurrentBitmap = false;
-        } else {
+        if (loadNewBitmap) {
           img = await loadImageBitmap(url);
-          currentBitmap = img;
+          loadedBitmap = img;
+        } else {
+          img = loadedBitmap;
         }
         const texture = device.createTexture({
           size: [img.width, img.height],
@@ -79,12 +78,17 @@
         return texture;
       }
 
-      async function updateTexture() {
-        logMessage('Loading image...');
-        canvas.style.opacity = '0.15';
-        const texture = await createTextureFromImage(device, settings.imageURL);
-        logMessage(`Image loaded: ${texture.width} × ${texture.height}`);
-        canvas.style.opacity = '1';
+      async function updateTexture(loadNewBitmap = true) {
+        let texture;
+        if (loadNewBitmap) {
+          logMessage('Loading image...');
+          canvas.style.opacity = '0.15';
+          texture = await createTextureFromImage(device, settings.imageURL, true);
+          logMessage(`Image loaded: ${texture.width} × ${texture.height}`);
+          canvas.style.opacity = '1';
+        } else {
+          texture = await createTextureFromImage(device, settings.imageURL, false);
+        }
 
         resizeCanvas(texture.width, texture.height);
 
@@ -146,13 +150,16 @@
       }
 
       function resizeCanvas(w, h) {
-        canvas.width = w;
-        canvas.height = h;
-        context.configure({
-          device,
-          format,
-          alphaMode: 'premultiplied',
-        });
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+
+          context.configure({
+            device,
+            format,
+            alphaMode: 'premultiplied',
+          });
+        }
       }
 
       function updateUniforms() {
@@ -160,19 +167,23 @@
         device.queue.writeBuffer(
           uniformBuffer,
           0,
+          // maybe another way to set with Float32Array and offsets
+          // then we use array.set here
           new Float32Array([brightness, contrast, exposure, gammaCompInShader ? 1 : 0])
         );
       }
 
       function frame() {
         const encoder = device.createCommandEncoder();
+
+        // seems like pass can be created once, outside the loop
         const pass = encoder.beginRenderPass({
           colorAttachments: [
             {
               view: context.getCurrentTexture().createView(),
               clearValue: [0, 0, 0, 0],
-              loadOp: 'clear',
-              storeOp: 'store',
+              loadOp: 'clear', // try different
+              storeOp: 'store', // try different
             },
           ],
         });
@@ -188,22 +199,24 @@
 
       function createGUI() {
         const gui = new lil.GUI({ container: document.getElementById('gui-container') });
-        const filterFolder = gui.addFolder('filter');
-        const debugFolder = gui.addFolder('debug');
-        filterFolder.add(settings, 'brightness', -1, 1, 0.01).onChange(updateUniforms);
-        filterFolder.add(settings, 'contrast', -1, 1, 0.01).onChange(updateUniforms);
-        filterFolder.add(settings, 'exposure', -1, 1, 0.01).onChange(updateUniforms);
+
         const fileInput = document.querySelector('input');
         fileInput.onchange = () => {
           settings.imageURL = fileInput.files?.[0];
           updateTexture();
         };
-        filterFolder.add({ load: () => fileInput.click() }, 'load').name('load image from disk');
+        gui.add({ load: () => fileInput.click() }, 'load').name('upload image from disk');
+        gui.add({ load: () => downloadImageBitmap(loadedBitmap, 'original') }, 'load').name('download original');
 
+        const lightingFolder = gui.addFolder('lighting');
+        lightingFolder.add(settings, 'brightness', -1, 1, 0.01).onChange(updateUniforms);
+        lightingFolder.add(settings, 'contrast', -1, 1, 0.01).onChange(updateUniforms);
+        lightingFolder.add(settings, 'exposure', -1, 1, 0.01).onChange(updateUniforms);
+
+        const debugFolder = gui.addFolder('debug');
         debugFolder.add(settings, 'gammaCompInShader').onChange(updateUniforms);
         debugFolder.add(settings, 'format', ['rgba8unorm', 'rgba8unorm-srgb']).onChange(() => {
-          useCurrentBitmap = true;
-          updateTexture();
+          updateTexture(false);
         });
       }
     </script>

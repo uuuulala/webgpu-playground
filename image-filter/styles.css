@@ -15,6 +15,7 @@ canvas {
   display: block;
   max-width: 90vw;
   max-height: 100vh;
+  cursor: pointer;
 }
 
 .log-wrapper {
