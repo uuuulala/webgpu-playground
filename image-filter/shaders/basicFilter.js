@@ -48,10 +48,11 @@ export const basicFilterShader = `
 
     c += vec3(uniforms.brightness);
 
-    let exposureFactor = pow(2., 2. * uniforms.exposure);
+    let exposureFactor = pow(2., 5. * uniforms.exposure);
     c *= exposureFactor;
+    c = clamp(c, vec3<f32>(0.0), vec3<f32>(1.0));
     
-//    let black = vec3<f32>(0.02);
+//    let black = vec3<f32>(0.4);
 //    c = (c - black) / (exp2(-uniforms.exposure) - black);
     
     let contrastFactor = 1. + uniforms.contrast;

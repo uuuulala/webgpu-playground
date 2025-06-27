@@ -8,6 +8,8 @@
 
   <body>
     <canvas id="original-canvas"></canvas>
+    <canvas id="histogram-canvas" ></canvas>
+
     <canvas id="gpu-canvas"></canvas>
     <div class="log-wrapper">
       <div class="log"></div>
@@ -20,6 +22,7 @@
       import { basicFilterShader } from './shaders/basicFilter.js';
       import { loadImageBitmap, getRandomImageUrl, downloadImageBitmap } from './imageLoader.js';
       import { showImageBitmap } from './showBitmap.js';
+      import { getImageData, computeHistogram, drawHistogram } from './histogramCPU.js';
       import { logMessage } from './logElement.js';
 
       const settings = {
@@ -94,6 +97,10 @@
         } else {
           texture = await createTextureFromImage(device, settings.imageURL, false);
         }
+
+        const imgData = getImageData(loadedBitmap);
+        const histogram = computeHistogram(256, imgData);
+        drawHistogram(histogram, imgData.width * imgData.height);
 
         resizeCanvas(texture.width, texture.height);
 
@@ -181,14 +188,13 @@
       function frame() {
         const encoder = device.createCommandEncoder();
 
-        // seems like pass can be created once, outside the loop
         const pass = encoder.beginRenderPass({
           colorAttachments: [
             {
               view: context.getCurrentTexture().createView(),
               clearValue: [0, 0, 0, 0],
-              loadOp: 'clear', // try different
-              storeOp: 'store', // try different
+              loadOp: 'clear',
+              storeOp: 'store',
             },
           ],
         });

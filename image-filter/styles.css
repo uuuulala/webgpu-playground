@@ -18,6 +18,15 @@ canvas#gpu-canvas {
   cursor: pointer;
 }
 
+canvas#histogram-canvas {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  display: block;
+  z-index: 10;
+  background-color: rgba(255, 255, 255, 0.75);
+}
+
 .log-wrapper {
   position: fixed;
   bottom: 10px;
